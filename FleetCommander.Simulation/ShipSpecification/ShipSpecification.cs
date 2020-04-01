@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using FleetCommander.Simulation.Framework.GridSystem;
 
 namespace FleetCommander.Simulation
 {

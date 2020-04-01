@@ -1,59 +1,209 @@
-﻿namespace FleetCommander.Simulation
+﻿using System;
+using System.Collections.Generic;
+using System.Numerics;
+
+namespace FleetCommander.Simulation.Framework.GridSystem
 {
-    public struct Coordinate
+    //public struct Coordinate
+    //{
+    //    public int X { get; set; }
+    //    public int Y { get; set; }
+    //    public int Z { get; set; }
+    //    //public Coordinate Project(char facing,int hexes)
+    //    //{
+    //    //    int x=0;
+    //    //    int y=0;
+    //    //    int z=0;
+
+    //    //    if (facing == Facing.A)
+    //    //    {
+    //    //        x = 1;
+    //    //        z = 0;
+    //    //        y = -1;
+    //    //    }
+    //    //    if (facing == Facing.B)
+    //    //    {
+    //    //        x = 0;
+    //    //        z = 1;
+    //    //        y = -1;
+    //    //    }
+    //    //    if (facing == Facing.C)
+    //    //    {
+    //    //        x = -1;
+    //    //        z = 1;
+    //    //        y = 0;
+    //    //    }
+    //    //    if (facing == Facing.D)
+    //    //    { 
+    //    //        x = -1;
+    //    //        z = 0;
+    //    //        y = 1;
+    //    //    }
+    //    //    if (facing == Facing.E)
+    //    //    {
+    //    //        x = 0;
+    //    //        z = -1;
+    //    //        y = 1;
+    //    //    }
+    //    //    if (facing == Facing.F)
+    //    //    {
+    //    //        x = 1;
+    //    //        z = -1;
+    //    //        y = 0;
+    //    //    }
+
+    //    //    return new Coordinate
+    //    //    {
+    //    //        X = x * hexes,
+    //    //        Y = y * hexes,
+    //    //        Z = z * hexes
+    //    //    };
+    //    //}
+
+
+    //    //public int Distance(Coordinate otherCoordinate)
+    //    //{
+    //    //    return (Math.Abs(X - otherCoordinate.X) + Math.Abs(Y - otherCoordinate.Y) + Math.Abs(Z - otherCoordinate.Z)) / 2;
+    //    //}
+    //}
+
+
+
+    public struct Hex
     {
-        public int X { get; set; }
-        public int Y { get; set; }
-        public int Z { get; set; }
-        public Coordinate Project(char facing,int hexes)
+        public Hex(int q, int r, int s)
         {
-            int x=0;
-            int y=0;
-            int z=0;
-
-            if (facing == Facing.A)
-            {
-                x = 1;
-                z = 0;
-                y = -1;
-            }
-            if (facing == Facing.B)
-            {
-                x = 0;
-                z = 1;
-                y = -1;
-            }
-            if (facing == Facing.C)
-            {
-                x = -1;
-                z = 1;
-                y = 0;
-            }
-            if (facing == Facing.D)
-            { 
-                x = -1;
-                z = 0;
-                y = 1;
-            }
-            if (facing == Facing.E)
-            {
-                x = 0;
-                z = -1;
-                y = 1;
-            }
-            if (facing == Facing.F)
-            {
-                x = 1;
-                z = -1;
-                y = 0;
-            }
-
-            return new Coordinate
-            {
-                X = x * hexes,
-                Y = y * hexes,
-                Z = z * hexes
-            };
+            this.q = q;
+            this.r = r;
+            this.s = s;
+            if (q + r + s != 0) throw new ArgumentException("q + r + s must be 0");
         }
+        public readonly int q;
+        public readonly int r;
+        public readonly int s;
+
+        public Hex Add(Hex b)
+        {
+            return new Hex(q + b.q, r + b.r, s + b.s);
+        }
+
+
+        public Hex Subtract(Hex b)
+        {
+            return new Hex(q - b.q, r - b.r, s - b.s);
+        }
+
+
+        public Hex Scale(int k)
+        {
+            return new Hex(q * k, r * k, s * k);
+        }
+
+
+        public Hex RotateLeft()
+        {
+            return new Hex(-s, -q, -r);
+        }
+
+
+        public Hex RotateRight()
+        {
+            return new Hex(-r, -s, -q);
+        }
+
+        static public List<Hex> directions = new List<Hex> { new Hex(1, 0, -1), new Hex(1, -1, 0), new Hex(0, -1, 1), new Hex(-1, 0, 1), new Hex(-1, 1, 0), new Hex(0, 1, -1) };
+
+        static public Hex Direction(int direction)
+        {
+            return Hex.directions[direction];
+        }
+
+
+        public Hex Neighbor(int direction)
+        {
+            return Add(Hex.Direction(direction));
+        }
+
+        static public List<Hex> diagonals = new List<Hex> { new Hex(2, -1, -1), new Hex(1, -2, 1), new Hex(-1, -1, 2), new Hex(-2, 1, 1), new Hex(-1, 2, -1), new Hex(1, 1, -2) };
+
+        public Hex DiagonalNeighbor(int direction)
+        {
+            return Add(Hex.diagonals[direction]);
+        }
+
+
+        public int Length()
+        {
+            return (int)((Math.Abs(q) + Math.Abs(r) + Math.Abs(s)) / 2);
+        }
+
+
+        public int Distance(Hex b)
+        {
+            return Subtract(b).Length();
+        }
+
     }
+
+
+    struct FractionalHex
+    {
+        public FractionalHex(double q, double r, double s)
+        {
+            this.q = q;
+            this.r = r;
+            this.s = s;
+            if (Math.Round(q + r + s) != 0) throw new ArgumentException("q + r + s must be 0");
+        }
+        public readonly double q;
+        public readonly double r;
+        public readonly double s;
+
+        public Hex HexRound()
+        {
+            int qi = (int)(Math.Round(q));
+            int ri = (int)(Math.Round(r));
+            int si = (int)(Math.Round(s));
+            double q_diff = Math.Abs(qi - q);
+            double r_diff = Math.Abs(ri - r);
+            double s_diff = Math.Abs(si - s);
+            if (q_diff > r_diff && q_diff > s_diff)
+            {
+                qi = -ri - si;
+            }
+            else
+            if (r_diff > s_diff)
+            {
+                ri = -qi - si;
+            }
+            else
+            {
+                si = -qi - ri;
+            }
+            return new Hex(qi, ri, si);
+        }
+
+
+        public FractionalHex HexLerp(FractionalHex b, double t)
+        {
+            return new FractionalHex(q * (1.0 - t) + b.q * t, r * (1.0 - t) + b.r * t, s * (1.0 - t) + b.s * t);
+        }
+
+
+        static public List<Hex> HexLinedraw(Hex a, Hex b)
+        {
+            int N = a.Distance(b);
+            FractionalHex a_nudge = new FractionalHex(a.q + 1e-06, a.r + 1e-06, a.s - 2e-06);
+            FractionalHex b_nudge = new FractionalHex(b.q + 1e-06, b.r + 1e-06, b.s - 2e-06);
+            List<Hex> results = new List<Hex> { };
+            double step = 1.0 / Math.Max(N, 1);
+            for (int i = 0; i <= N; i++)
+            {
+                results.Add(a_nudge.HexLerp(b_nudge, step * i).HexRound());
+            }
+            return results;
+        }
+
+    }
+
 }

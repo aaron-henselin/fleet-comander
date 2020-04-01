@@ -1,12 +1,12 @@
-﻿namespace FleetCommander.Simulation
+﻿namespace FleetCommander.Simulation.Framework.GridSystem
 {
     public class Facing
     {
-        public const char A = 'A';
-        public const char B = 'B';
-        public const char C = 'C';
-        public const char D = 'D';
-        public const char E = 'E';
-        public const char F = 'F';
+        public const char A = 'a';
+        public const char B = 'b';
+        public const char C = 'c';
+        public const char D = 'd';
+        public const char E = 'e';
+        public const char F = 'f';
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace FleetCommander.Simulation
+﻿namespace FleetCommander.Simulation.Framework.GridSystem
 {
     public enum Arc
     {

@@ -1,8 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using FleetCommander.Simulation.Framework.GridSystem;
 
 namespace FleetCommander.Simulation
 {
@@ -60,6 +62,12 @@ namespace FleetCommander.Simulation
         public List<string> SsdCode { get; set; }
         public int ShipFrom { get; set; }
         public int ShipTo { get; set; }
+        public SystemTargeting Targeting { get; set; }
+    }
+
+    public enum SystemTargeting
+    {
+        Indiscriminant, Power, Weapons
     }
 
     public struct DeclaredSpeedChange {
@@ -68,25 +76,25 @@ namespace FleetCommander.Simulation
     public struct DeclaredNavigation
     {
         public int ShipId { get; set; }
-        public char? SideSlipDirection { get; set; }
-        public char? NewFacing { get; set; }
+        public int? SideSlipDirection { get; set; }
+        public int? NewFacing { get; set; }
     } 
 
     public enum SpeedChange { Unknown, Accelerate, Decelerate }
 
     public struct Position
     {
-        public Coordinate Coordinate { get; set; }
-        public char Facing { get; private set; }
+        public Hex Hex { get; set; }
+        public int Facing { get; private set; }
         
-        public void SetFacing(char facing)
+        public void SetFacing(int facing)
         {
             this.Facing = facing;
         }
 
-        public void SetPosition(Coordinate coordinate)
+        public void SetPosition(Hex coordinate)
         {
-            this.Coordinate = coordinate;
+            this.Hex = coordinate;
         }
     }
 
@@ -109,6 +117,14 @@ namespace FleetCommander.Simulation
 
     }
 
+    public static class SimulationSeed
+    {
+        public static int Generate()
+        {
+            return Guid.NewGuid().GetHashCode();
+        }
+    }
+
     /*
         Each unit will move one hex, and only one hex,
         during each Movement Sub-Pulse in which movement
@@ -129,14 +145,19 @@ namespace FleetCommander.Simulation
     */
     public class Simulation
     {
+        public int Seed { get; }
+        public Dice Dice { get; }
         public SimulationTimeStamp SimulationTimeStamp { get; set; }
 
         public List<Ship> AllShips { get; set; } = new List<Ship>();
         public List<MovementMarker> MovementMarkers { get; set; } = new List<MovementMarker>();
 
-
-
-
+        public Simulation(int seed)
+        {
+            this.Seed = seed;
+            this.Dice = new Dice(seed);
+        }
+        
         //public void AdvanceBySubPulse()
         //{
         //    /*(2B2a) Acceleration: Ships can increase their
@@ -179,7 +200,7 @@ namespace FleetCommander.Simulation
         {
 
             AllShips.ForEach(x => x.RolloverExcessEnergyIntoBatteries());
-            AllShips.ForEach(x => x.ResetWeaponsUsed());
+            //AllShips.ForEach(x => x.ResetWeaponsUsed());
         }
 
         private void ExecuteSpeedChange(Ship ship, DeclaredSpeedChange declaredSpeedChange)
@@ -206,7 +227,7 @@ namespace FleetCommander.Simulation
 
             if (declaredNavigation.SideSlipDirection.HasValue)
             {
-                ExecuteSideSlip(ship);
+                ExecuteSideSlip(ship,declaredNavigation.SideSlipDirection.Value);
             }
             else
             {
@@ -226,6 +247,11 @@ namespace FleetCommander.Simulation
                 {
                     var projectile = shipFrom.ExpendDirectFireProjectile(ssdCode);
                     projectile.Target = volley.ShipTo;
+                    var targetPosition = this.AllShips.Single(x => x.ShipId == projectile.Target).Position;
+                    projectile.Distance = shipFrom.Position.Hex.Distance(targetPosition.Hex);
+                    projectile.HitTrack = this.Dice.RollD6();
+                    var damage = projectile.CalculateDamage();
+
 
                     projectiles.Add(projectile);
                 }
@@ -236,7 +262,15 @@ namespace FleetCommander.Simulation
 
         public void ApplyDirectFireProjectiles(IReadOnlyCollection<DirectFireProjectile> projectiles)
         {
-
+            foreach (var projectile in projectiles)
+            {
+                if (projectile is PhotonTorpedoProjectile photonTorpedoProjectile)
+                {
+                    if (photonTorpedoProjectile.OverloadState == PhotonTorpedoOverloadState.Overloaded4 || photonTorpedoProjectile.OverloadState == PhotonTorpedoOverloadState.Overloaded8)
+                    {
+                    }
+                }
+            }
         }
 
         //(1E1) ENERGY ALLOCATION
@@ -258,7 +292,8 @@ namespace FleetCommander.Simulation
 
         private void ExecuteStandardMovement(Ship ship)
         {
-            var newCoodinate = ship.Position.Coordinate.Project(ship.Position.Facing, 1);
+
+            var newCoodinate = ship.Position.Hex.Neighbor(ship.Position.Facing);
             ship.Position.SetPosition(newCoodinate);
 
             var turnMarkersToDecrement = MovementMarkers.Where(x => x.ForShipId == ship.ShipId).ToList();
@@ -266,7 +301,7 @@ namespace FleetCommander.Simulation
                 turnMarker.Decrement();
         }
 
-        private void ExecuteSideSlip(Ship ship)
+        private void ExecuteSideSlip(Ship ship, int direction)
         {
             MovementMarkers.Add(new SideSlipMarker
             {
@@ -275,7 +310,7 @@ namespace FleetCommander.Simulation
                 ForShipId = ship.ShipId
             });
 
-            var newCoodinate = ship.Position.Coordinate.Project(ship.Position.Facing, 1);
+            var newCoodinate = ship.Position.Hex.Neighbor(direction);
             ship.Position.SetPosition(newCoodinate);
         }
     }
