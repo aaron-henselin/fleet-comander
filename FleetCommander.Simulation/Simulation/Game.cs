@@ -136,7 +136,15 @@ namespace FleetCommander.Simulation
 
             foreach (var salvo in salvos)
             {
+
+                
+
                 var ship = AllShips.Single(x => x.ShipId == salvo.TargetShipId);
+                
+                
+                ship.Position.Facing
+
+                salvo.DamageDirection
 
                 var useTargeting = salvo.Targeting;
                 var damageRemainingToApply = salvo.TotalDamage;
@@ -205,6 +213,8 @@ namespace FleetCommander.Simulation
             public SystemTargeting Targeting { get; internal set; }
             public int TargetShipId { get; internal set; }
             public int TotalDamage => Projectiles.Sum(x => x.CalculateDamage());
+
+            public int DamageDirection { get; internal set; }
         }
 
         private IReadOnlyCollection<Salvo> GenerateSalvos(IReadOnlyCollection<OffensiveFireDeclaration> fireDeclarations)
@@ -215,6 +225,8 @@ namespace FleetCommander.Simulation
                 List<DirectFireProjectile> projectiles = new List<DirectFireProjectile>();
 
                 var shipFrom = this.AllShips.Single(x => x.ShipId == volley.ShipFrom);
+                var shipTo = this.AllShips.Single(x => x.ShipId == volley.ShipTo);
+
                 foreach (var ssdCode in volley.SsdCode)
                 {
                     var projectile = shipFrom.ExpendDirectFireProjectile(ssdCode);
@@ -236,8 +248,17 @@ namespace FleetCommander.Simulation
                             volley.Targeting = SystemTargeting.Indiscriminant;
                         
                 }
+
+                int direction = 0;
+                var hexes = FractionalHex.HexLinedraw(shipTo.Position.Hex,shipFrom.Position.Hex);
+                if (hexes.Count > 1)
+                {
+                  direction = hexes[0].NeighborDirection(hexes[1]);
+                }
+
                 salvoes.Add(new Salvo
                 {
+                    DamageDirection = direction,
                     TargetShipId = volley.ShipTo,
                     Targeting = volley.Targeting,
                     Projectiles = projectiles,

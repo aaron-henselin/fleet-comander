@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 
 namespace FleetCommander.Simulation.Framework.GridSystem
@@ -118,6 +119,11 @@ namespace FleetCommander.Simulation.Framework.GridSystem
             return Hex.directions[direction];
         }
 
+        public int NeighborDirection(Hex neighbor)
+        {
+            var neighborDirection = Subtract(neighbor);
+            return directions.IndexOf(neighborDirection);
+        }
 
         public Hex Neighbor(int direction)
         {
