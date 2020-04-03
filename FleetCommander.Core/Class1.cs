@@ -37,7 +37,7 @@ namespace FleetCommander.Simulation
     public struct Position
     {
         public Hex Hex { get; set; }
-        public int Rotation { get; private set; }
+        public int Rotation { get; set; }
         
         public void SetFacing(int facing)
         {

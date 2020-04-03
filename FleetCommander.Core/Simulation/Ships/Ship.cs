@@ -21,7 +21,13 @@ namespace FleetCommander.Simulation.Simulation.Ships
 
     public class Ship
     {
-       
+        private readonly ShipSpecification _spec;
+
+        public Ship(ShipSpecification spec)
+        {
+            _spec = spec;
+        }
+
         public int ShipId { get; set; }
         public int CurrentSpeed { get; set; }
         public decimal UndeclaredEnginePool { get; set; }
@@ -33,6 +39,8 @@ namespace FleetCommander.Simulation.Simulation.Ships
          */
         public void Initialize()
         {
+            ShipInternals = new ShipState(_spec);
+
             foreach (var shipStateAvailableBattery in ShipInternals.AvailableBatteries)
                 shipStateAvailableBattery.IsCharged = true;
             

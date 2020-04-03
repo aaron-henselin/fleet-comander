@@ -27,12 +27,14 @@ namespace FleetCommander.Simulation
     //    }
     //}
 
+
+
     public class Game
     {
         public int Seed { get; }
         public Dice Dice { get; }
         public SimulationTimeStamp SimulationTimeStamp { get; set; }
-
+     
 
         public List<Ship> AllShips { get; set; } = new List<Ship>();
         public List<MovementMarker> MovementMarkers { get; set; } = new List<MovementMarker>();
@@ -42,6 +44,16 @@ namespace FleetCommander.Simulation
             this.Seed = seed;
             this.Dice = new Dice(seed);
             GetOrCreateTurn(0);
+        }
+
+        public Ship Spawn(ShipSpecification spec, Position p)
+        {
+            var ship = new Ship(spec);
+            ship.Initialize();
+            ship.Position = p;
+            ship.ShipId=AllShips.Max(x => x.ShipId) + 1;
+            AllShips.Add(ship);
+            return ship;
         }
 
         private SimulationTurn GetOrCreateTurn(int turnNumber)
