@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 
 namespace FleetCommander.Simulation.Framework.GridSystem
@@ -117,11 +118,26 @@ namespace FleetCommander.Simulation.Framework.GridSystem
         {
             return Hex.directions[direction];
         }
-
+        public static int Direction(Hex hexDirection)
+        {
+            var directionLookup = new Dictionary<Hex, int>();
+            directionLookup.Add(directions[0], 0);
+            directionLookup.Add(directions[1], 1);
+            directionLookup.Add(directions[2], 2);
+            directionLookup.Add(directions[3], 3);
+            directionLookup.Add(directions[4], 4);
+            directionLookup.Add(directions[5], 5);
+            return directionLookup[hexDirection];
+        }
 
         public Hex Neighbor(int direction)
         {
             return Add(Hex.Direction(direction));
+        }
+
+        public Hex NeighborDirection(Hex neighbor)
+        {
+            return this.Subtract(neighbor);
         }
 
         static public List<Hex> diagonals = new List<Hex> { new Hex(2, -1, -1), new Hex(1, -2, 1), new Hex(-1, -1, 2), new Hex(-2, 1, 1), new Hex(-1, 2, -1), new Hex(1, 1, -2) };
@@ -142,6 +158,7 @@ namespace FleetCommander.Simulation.Framework.GridSystem
         {
             return Subtract(b).Length();
         }
+
 
     }
 

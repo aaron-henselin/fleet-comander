@@ -1,12 +1,12 @@
 ﻿namespace FleetCommander.Simulation.Framework.GridSystem
 {
-    public class Facing
+    public class ShipRotation
     {
-        public const char A = 'a';
-        public const char B = 'b';
-        public const char C = 'c';
-        public const char D = 'd';
-        public const char E = 'e';
-        public const char F = 'f';
+        public const int R0 = 0;
+        public const int R1 = 1;
+        public const int R2 = 2;
+        public const int R3 = 3;
+        public const int R4 = -2;
+        public const int R5 = -1;
     }
 }

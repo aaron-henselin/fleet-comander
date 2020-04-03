@@ -141,17 +141,22 @@ namespace FleetCommander.Simulation
                 var useTargeting = salvo.Targeting;
                 var damageRemainingToApply = salvo.TotalDamage;
 
-                ApplyDamage(damageRemainingToApply, useTargeting, ship, DamageType.WeaponFire);
+
+                var newHexDirection = HexRotation.NewFacing(salvo.DamageDirection, ship.Position.Rotation);
+
+                ApplyDamage(damageRemainingToApply, newHexDirection, useTargeting, ship, DamageType.WeaponFire);
 
             }
         }
 
-        private void ApplyDamage(int salvoDamage, SystemTargeting salvoTargeting, Ship ship,DamageType damageType)
+        private void ApplyDamage(int salvoDamage, Hex damageDirection, SystemTargeting salvoTargeting, Ship ship,DamageType damageType)
         {
             var damageRemainingToApply = salvoDamage;
             var useTargeting = salvoTargeting;
 
             var amtPenetrated = 0;
+
+           
 
             while (damageRemainingToApply > 0 && ship.ShipInternals.IsFrameIntact)
             {
@@ -160,7 +165,7 @@ namespace FleetCommander.Simulation
 
                 var applyDamageResult = ship.ApplyDamage(
                     damageInThisBatch,
-                    Facing.A, 
+                    damageDirection, 
                     dacTrack, 
                     damageType,
                     useTargeting);
@@ -174,7 +179,7 @@ namespace FleetCommander.Simulation
 
             var qualifiesForBurnThrough = salvoDamage >= 10 && amtPenetrated == 0;
             if (qualifiesForBurnThrough)
-                ApplyDamage(1,salvoTargeting,ship,DamageType.BurnThrough);
+                ApplyDamage(1,damageDirection,salvoTargeting,ship,DamageType.BurnThrough);
         }
 
         private DamageAllocationTrack GenerateDamageAllocationTrack(SystemTargeting useTargeting)
@@ -205,6 +210,10 @@ namespace FleetCommander.Simulation
             public SystemTargeting Targeting { get; internal set; }
             public int TargetShipId { get; internal set; }
             public int TotalDamage => Projectiles.Sum(x => x.CalculateDamage());
+
+            public Ship ShipFrom { get; internal set; }
+            public Ship ShipTo { get; internal set; }
+            public Hex DamageDirection { get; internal set; }
         }
 
         private IReadOnlyCollection<Salvo> GenerateSalvos(IReadOnlyCollection<OffensiveFireDeclaration> fireDeclarations)
@@ -215,6 +224,24 @@ namespace FleetCommander.Simulation
                 List<DirectFireProjectile> projectiles = new List<DirectFireProjectile>();
 
                 var shipFrom = this.AllShips.Single(x => x.ShipId == volley.ShipFrom);
+                var shipTo = this.AllShips.Single(x => x.ShipId == volley.ShipTo);
+                volley.Distance = shipFrom.Position.Hex.Distance(shipTo.Position.Hex);
+
+                Hex damageDirection;
+                if (volley.Distance > 0)
+                {
+                    var hexes = FractionalHex.HexLinedraw(shipTo.Position.Hex, shipFrom.Position.Hex);
+
+                    var h0 = hexes[0];
+                    var h1 = hexes[1];
+                    damageDirection = h0.NeighborDirection(h1);
+                    
+                }
+                else
+                {
+                    damageDirection = Hex.Direction(Dice.RollD6());
+                }
+
                 foreach (var ssdCode in volley.SsdCode)
                 {
                     var projectile = shipFrom.ExpendDirectFireProjectile(ssdCode);
@@ -225,8 +252,7 @@ namespace FleetCommander.Simulation
                     };
                     projectile.Origin = volley.ShipFrom;
                     projectile.Target = volley.ShipTo;
-                    var targetPosition = this.AllShips.Single(x => x.ShipId == projectile.Target).Position;
-                    projectile.Distance = shipFrom.Position.Hex.Distance(targetPosition.Hex);
+                    
                     projectile.HitTrack = this.Dice.RollD6();
                     
                     projectiles.Add(projectile);
@@ -238,9 +264,12 @@ namespace FleetCommander.Simulation
                 }
                 salvoes.Add(new Salvo
                 {
+                    ShipFrom = shipFrom,
+                    ShipTo = shipTo,
                     TargetShipId = volley.ShipTo,
                     Targeting = volley.Targeting,
                     Projectiles = projectiles,
+                    DamageDirection = damageDirection
                 });
               
             }
@@ -339,7 +368,7 @@ namespace FleetCommander.Simulation
         private void ExecuteStandardMovement(Ship ship)
         {
 
-            var newCoodinate = ship.Position.Hex.Neighbor(ship.Position.Facing);
+            var newCoodinate = ship.Position.Hex.Neighbor(ship.Position.Rotation);
             ship.Position.SetPosition(newCoodinate);
 
             var turnMarkersToDecrement = MovementMarkers.Where(x => x.ForShipId == ship.ShipId).ToList();

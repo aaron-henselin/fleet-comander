@@ -127,12 +127,12 @@ namespace FleetCommander.Simulation.Simulation.Ships
 
         
 
-        internal ApplyDamageResult ApplyDamage(int dmg, char facing, DamageAllocationTrack track, DamageType damageType, SystemTargeting targeting)
+        internal ApplyDamageResult ApplyDamage(int dmg, Hex damageDirection, DamageAllocationTrack track, DamageType damageType, SystemTargeting targeting)
         {
             var result = new ApplyDamageResult();
 
             var remainingDamage = dmg;
-            var shield = this.ShipInternals.GetShield(facing);
+            var shield = this.ShipInternals.GetShield(damageDirection);
             if (damageType == DamageType.WeaponFire)
             {
                 var absorbed = Math.Min(shield.Remaining, remainingDamage);
@@ -242,7 +242,7 @@ namespace FleetCommander.Simulation.Simulation.Ships
             {
                 var shieldsToRestore = shieldAllocation.Value / 2;
                 ExpendEnergyAdHoc(shieldAllocation.Value);
-                var shield = this.ShipInternals.GetShield(shieldAllocation.Key);
+                var shield = this.ShipInternals.GetShield(Hex.Direction(shieldAllocation.Key));
                 shield.Remaining = Math.Min(shield.Remaining + shieldsToRestore, shield.Capacity);
             }
 
@@ -273,7 +273,7 @@ namespace FleetCommander.Simulation.Simulation.Ships
 
     public class ShieldReinforcement
     {
-        public Dictionary<char, int> ShieldsToReinforce { get; set; } = new Dictionary<char, int>();
+        public Dictionary<int, int> ShieldsToReinforce { get; set; } = new Dictionary<int, int>();
     }
 
     public class DamageControl
@@ -286,7 +286,7 @@ namespace FleetCommander.Simulation.Simulation.Ships
     {
         private readonly ShipSpecification _spec;
         private readonly List<ShipComponent> _allComponents = new List<ShipComponent>();
-        private readonly Dictionary<char, Shield> _shields = new Dictionary<char, Shield>();
+        private readonly Dictionary<Hex, Shield> _shields = new Dictionary<Hex, Shield>();
         public ShipState(ShipSpecification spec)
         {
             _spec = spec;
@@ -338,13 +338,14 @@ namespace FleetCommander.Simulation.Simulation.Ships
                         PhaserClass = 1
                     });
             }
-
-            _shields[Facing.A] = new Shield(spec.ShieldStrength[Facing.A]);
-            _shields[Facing.B] = new Shield(spec.ShieldStrength[Facing.B]);
-            _shields[Facing.C] = new Shield(spec.ShieldStrength[Facing.C]);
-            _shields[Facing.D] = new Shield(spec.ShieldStrength[Facing.D]);
-            _shields[Facing.E] = new Shield(spec.ShieldStrength[Facing.E]);
-            _shields[Facing.F] = new Shield(spec.ShieldStrength[Facing.F]);
+           
+            
+            _shields[Hex.Direction(0)] = new Shield(spec.ShieldStrength[Hex.Direction(0)]);
+            _shields[Hex.Direction(1)] = new Shield(spec.ShieldStrength[Hex.Direction(1)]);
+            _shields[Hex.Direction(2)] = new Shield(spec.ShieldStrength[Hex.Direction(2)]);
+            _shields[Hex.Direction(3)] = new Shield(spec.ShieldStrength[Hex.Direction(3)]);
+            _shields[Hex.Direction(4)] = new Shield(spec.ShieldStrength[Hex.Direction(4)]);
+            _shields[Hex.Direction(5)] = new Shield(spec.ShieldStrength[Hex.Direction(5)]);
 
             DamageControl = new DamageControl
             {
@@ -361,7 +362,7 @@ namespace FleetCommander.Simulation.Simulation.Ships
         public IReadOnlyCollection<BatteryComponent> AvailableBatteries => UndamagedComponents.OfType<BatteryComponent>().ToList();
         public IReadOnlyCollection<PhaserComponent> AvailablePhasers => UndamagedComponents.OfType<PhaserComponent>().ToList();
         public bool IsFrameIntact => UndamagedComponents.OfType<FrameComponent>().Any();
-        public Shield GetShield(char facing)
+        public Shield GetShield(Hex facing)
         {
             return _shields[facing];
         }
