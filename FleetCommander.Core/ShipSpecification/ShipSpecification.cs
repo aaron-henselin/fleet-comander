@@ -7,7 +7,7 @@ namespace FleetCommander.Simulation
     public class ShipSpecification
     {
         public int DamageControlRating { get; set; }
-        public Dictionary<char, int> ShieldStrength { get; set; } = new Dictionary<char, int>();
+        public Dictionary<Hex, int> ShieldStrength { get; set; } = new Dictionary<Hex, int>();
         public Dictionary<int, int> Manuverability { get; set; } = new Dictionary<int, int>();
 
         public Loadout Loadout = new Loadout();
@@ -75,12 +75,13 @@ namespace FleetCommander.Simulation
     {
         public FederationHeavyCruiserSpecification()
         {
-            ShieldStrength[Facing.A] = 15;
-            ShieldStrength[Facing.B] = 12;
-            ShieldStrength[Facing.C] = 12;
-            ShieldStrength[Facing.D] = 12;
-            ShieldStrength[Facing.E] = 12;
-            ShieldStrength[Facing.F] = 12;
+            
+            ShieldStrength[Hex.Direction(0)] = 15;
+            ShieldStrength[Hex.Direction(1)] = 12;
+            ShieldStrength[Hex.Direction(2)] = 12;
+            ShieldStrength[Hex.Direction(3)] = 12;
+            ShieldStrength[Hex.Direction(4)] = 12;
+            ShieldStrength[Hex.Direction(5)] = 12;
 
             Loadout.EnergyLoadout = new EnergyLoadout
             {

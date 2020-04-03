@@ -87,6 +87,7 @@ namespace FleetCommander.Simulation
         public int ShipFrom { get; set; }
         public int ShipTo { get; set; }
         public SystemTargeting Targeting { get; set; }
+        public int Distance { get; internal set; }
     }
     public struct DeclaredSpeedChange
     {

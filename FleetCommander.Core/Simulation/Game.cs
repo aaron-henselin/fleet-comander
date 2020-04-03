@@ -27,12 +27,14 @@ namespace FleetCommander.Simulation
     //    }
     //}
 
+
+
     public class Game
     {
         public int Seed { get; }
         public Dice Dice { get; }
         public SimulationTimeStamp SimulationTimeStamp { get; set; }
-
+     
 
         public List<Ship> AllShips { get; set; } = new List<Ship>();
         public List<MovementMarker> MovementMarkers { get; set; } = new List<MovementMarker>();
@@ -42,6 +44,16 @@ namespace FleetCommander.Simulation
             this.Seed = seed;
             this.Dice = new Dice(seed);
             GetOrCreateTurn(0);
+        }
+
+        public Ship Spawn(ShipSpecification spec, Position p)
+        {
+            var ship = new Ship(spec);
+            ship.Initialize();
+            ship.Position = p;
+            ship.ShipId=AllShips.Max(x => x.ShipId) + 1;
+            AllShips.Add(ship);
+            return ship;
         }
 
         private SimulationTurn GetOrCreateTurn(int turnNumber)
@@ -136,30 +148,27 @@ namespace FleetCommander.Simulation
 
             foreach (var salvo in salvos)
             {
-
-                
-
                 var ship = AllShips.Single(x => x.ShipId == salvo.TargetShipId);
-                
-                
-                ship.Position.Facing
-
-                salvo.DamageDirection
 
                 var useTargeting = salvo.Targeting;
                 var damageRemainingToApply = salvo.TotalDamage;
 
-                ApplyDamage(damageRemainingToApply, useTargeting, ship, DamageType.WeaponFire);
+
+                var newHexDirection = HexRotation.NewFacing(salvo.DamageDirection, ship.Position.Rotation);
+
+                ApplyDamage(damageRemainingToApply, newHexDirection, useTargeting, ship, DamageType.WeaponFire);
 
             }
         }
 
-        private void ApplyDamage(int salvoDamage, SystemTargeting salvoTargeting, Ship ship,DamageType damageType)
+        private void ApplyDamage(int salvoDamage, Hex damageDirection, SystemTargeting salvoTargeting, Ship ship,DamageType damageType)
         {
             var damageRemainingToApply = salvoDamage;
             var useTargeting = salvoTargeting;
 
             var amtPenetrated = 0;
+
+           
 
             while (damageRemainingToApply > 0 && ship.ShipInternals.IsFrameIntact)
             {
@@ -168,7 +177,7 @@ namespace FleetCommander.Simulation
 
                 var applyDamageResult = ship.ApplyDamage(
                     damageInThisBatch,
-                    Facing.A, 
+                    damageDirection, 
                     dacTrack, 
                     damageType,
                     useTargeting);
@@ -182,7 +191,7 @@ namespace FleetCommander.Simulation
 
             var qualifiesForBurnThrough = salvoDamage >= 10 && amtPenetrated == 0;
             if (qualifiesForBurnThrough)
-                ApplyDamage(1,salvoTargeting,ship,DamageType.BurnThrough);
+                ApplyDamage(1,damageDirection,salvoTargeting,ship,DamageType.BurnThrough);
         }
 
         private DamageAllocationTrack GenerateDamageAllocationTrack(SystemTargeting useTargeting)
@@ -214,7 +223,9 @@ namespace FleetCommander.Simulation
             public int TargetShipId { get; internal set; }
             public int TotalDamage => Projectiles.Sum(x => x.CalculateDamage());
 
-            public int DamageDirection { get; internal set; }
+            public Ship ShipFrom { get; internal set; }
+            public Ship ShipTo { get; internal set; }
+            public Hex DamageDirection { get; internal set; }
         }
 
         private IReadOnlyCollection<Salvo> GenerateSalvos(IReadOnlyCollection<OffensiveFireDeclaration> fireDeclarations)
@@ -226,6 +237,22 @@ namespace FleetCommander.Simulation
 
                 var shipFrom = this.AllShips.Single(x => x.ShipId == volley.ShipFrom);
                 var shipTo = this.AllShips.Single(x => x.ShipId == volley.ShipTo);
+                volley.Distance = shipFrom.Position.Hex.Distance(shipTo.Position.Hex);
+
+                Hex damageDirection;
+                if (volley.Distance > 0)
+                {
+                    var hexes = FractionalHex.HexLinedraw(shipTo.Position.Hex, shipFrom.Position.Hex);
+
+                    var h0 = hexes[0];
+                    var h1 = hexes[1];
+                    damageDirection = h0.NeighborDirection(h1);
+                    
+                }
+                else
+                {
+                    damageDirection = Hex.Direction(Dice.RollD6());
+                }
 
                 foreach (var ssdCode in volley.SsdCode)
                 {
@@ -237,8 +264,7 @@ namespace FleetCommander.Simulation
                     };
                     projectile.Origin = volley.ShipFrom;
                     projectile.Target = volley.ShipTo;
-                    var targetPosition = this.AllShips.Single(x => x.ShipId == projectile.Target).Position;
-                    projectile.Distance = shipFrom.Position.Hex.Distance(targetPosition.Hex);
+                    
                     projectile.HitTrack = this.Dice.RollD6();
                     
                     projectiles.Add(projectile);
@@ -248,20 +274,14 @@ namespace FleetCommander.Simulation
                             volley.Targeting = SystemTargeting.Indiscriminant;
                         
                 }
-
-                int direction = 0;
-                var hexes = FractionalHex.HexLinedraw(shipTo.Position.Hex,shipFrom.Position.Hex);
-                if (hexes.Count > 1)
-                {
-                  direction = hexes[0].NeighborDirection(hexes[1]);
-                }
-
                 salvoes.Add(new Salvo
                 {
-                    DamageDirection = direction,
+                    ShipFrom = shipFrom,
+                    ShipTo = shipTo,
                     TargetShipId = volley.ShipTo,
                     Targeting = volley.Targeting,
                     Projectiles = projectiles,
+                    DamageDirection = damageDirection
                 });
               
             }
@@ -360,7 +380,7 @@ namespace FleetCommander.Simulation
         private void ExecuteStandardMovement(Ship ship)
         {
 
-            var newCoodinate = ship.Position.Hex.Neighbor(ship.Position.Facing);
+            var newCoodinate = ship.Position.Hex.Neighbor(ship.Position.Rotation);
             ship.Position.SetPosition(newCoodinate);
 
             var turnMarkersToDecrement = MovementMarkers.Where(x => x.ForShipId == ship.ShipId).ToList();

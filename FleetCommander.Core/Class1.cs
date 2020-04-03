@@ -37,11 +37,11 @@ namespace FleetCommander.Simulation
     public struct Position
     {
         public Hex Hex { get; set; }
-        public int Facing { get; private set; }
+        public int Rotation { get; set; }
         
         public void SetFacing(int facing)
         {
-            this.Facing = facing;
+            this.Rotation = facing;
         }
 
         public void SetPosition(Hex coordinate)
@@ -50,11 +50,25 @@ namespace FleetCommander.Simulation
         }
     }
 
+    //    0
+    // -1   1
+    // -2   2
+    //    3
+    //
+    public static class HexRotation{
+        public static Hex NewFacing(Hex originalFacing,int rotation)
+        {
+            var sideNumber = Hex.Direction(originalFacing);
 
+            var newFacing = sideNumber + rotation;
+            if (newFacing < 0)
+                newFacing += 6;
+            if (newFacing > 5)
+                newFacing -= 6;
 
-    
-
-
+            return Hex.Direction(newFacing);
+        }
+    }
 
     public static class SimulationSeed
     {
