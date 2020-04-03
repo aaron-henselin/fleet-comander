@@ -207,7 +207,11 @@ namespace FleetCommander.Simulation.Simulation.Ships
 
         public EnergyAllocationDeclaration CreateDefaultEnergyAllocation()
         {
-            return new EnergyAllocationDeclaration();
+            
+            return new EnergyAllocationDeclaration
+            {
+                RoutedToEngines = this.CurrentSpeed / 2
+            };
         }
 
         public void ExecuteDeclaredEnergyAllocation(EnergyAllocationDeclaration allocationDeclaration)

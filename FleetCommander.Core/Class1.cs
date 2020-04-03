@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using System.Dynamic;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -38,15 +39,17 @@ namespace FleetCommander.Simulation
     {
         public Hex Hex { get; set; }
         public int Rotation { get; set; }
-        
-        public void SetFacing(int facing)
+
+        [Pure]
+        public Position WithFacing(int facing)
         {
-            this.Rotation = facing;
+            return new Position {Hex = Hex, Rotation = facing};
         }
 
-        public void SetPosition(Hex coordinate)
+        [Pure]
+        public Position WithHex(Hex coordinate)
         {
-            this.Hex = coordinate;
+            return new Position { Hex = coordinate, Rotation = Rotation };
         }
     }
 
@@ -55,20 +58,20 @@ namespace FleetCommander.Simulation
     // -2   2
     //    3
     //
-    public static class HexRotation{
-        public static Hex NewFacing(Hex originalFacing,int rotation)
-        {
-            var sideNumber = Hex.Direction(originalFacing);
+    //public static class HexRotation{
+    //    public static Hex NewFacing(Hex originalFacing,int rotation)
+    //    {
+    //        var sideNumber = Hex.Direction(originalFacing);
 
-            var newFacing = sideNumber + rotation;
-            if (newFacing < 0)
-                newFacing += 6;
-            if (newFacing > 5)
-                newFacing -= 6;
+    //        var newFacing = sideNumber + rotation;
+    //        if (newFacing < 0)
+    //            newFacing += 6;
+    //        if (newFacing > 5)
+    //            newFacing -= 6;
 
-            return Hex.Direction(newFacing);
-        }
-    }
+    //        return Hex.Direction(newFacing);
+    //    }
+    //}
 
     public static class SimulationSeed
     {
@@ -98,32 +101,78 @@ namespace FleetCommander.Simulation
     */
 
 
-
-
-    public struct SimulationTimeStamp
+    internal class SimulationTimeStampBuilder
     {
-        public string Id => $"{TurnNumber}-{TurnStep}-{ImpulseStep}-{Impulse}-{SubPulse}";
-        public int TurnNumber { get; set; }
-        public TurnStep TurnStep { get; set; }
-        public ImpulseStep? ImpulseStep { get; set; }
-        public int? Impulse { get; set; }
-        public int? SubPulse { get; set; }
+      
+        //public static SimulationTimeStampBuilder Unpack(string id)
+        //{
+        //    var tsBuilder = new SimulationTimeStampBuilder();
+        //    var parts = id.Split(',');
+        //    tsBuilder.TurnNumber = Convert.ToInt32(parts[0]);
+        //    tsBuilder.TurnStep = (TurnStep)Enum.Parse(typeof(TurnStep), parts[1]);
+
+        //    if (!string.IsNullOrEmpty(parts[2]))
+        //        tsBuilder.ImpulseStep = (ImpulseStep)Enum.Parse(typeof(ImpulseStep), parts[2]);
+
+        //    if (!string.IsNullOrEmpty(parts[3]))
+        //        tsBuilder.Impulse = Convert.ToInt32(parts[3]);
+
+        //    if (!string.IsNullOrEmpty(parts[4]))
+        //        tsBuilder.SubPulse = Convert.ToInt32(parts[4]);
+        //    return tsBuilder;
+        //}
+
+        public SimulationTimeStampBuilder()
+        {
+        }
+
+        public SimulationTimeStampBuilder(SimulationTimeStamp ts)
+        {
+            TurnNumber = ts.TurnNumber;
+            TurnStep = ts.TurnStep;
+            ImpulseStep = ts.ImpulseStep;
+            Impulse = ts.Impulse;
+            SubPulse = ts.SubPulse;
+        }
+
+        private int TurnNumber { get; set; }
+        private TurnStep TurnStep { get; set; }
+        private ImpulseStep? ImpulseStep { get; set; }
+        private int? Impulse { get; set; }
+        private int? SubPulse { get; set; }
+
+
+
+        public SimulationTimeStamp ToTimeStamp()
+        {
+            return new SimulationTimeStamp
+            {
+                TurnNumber = TurnNumber,
+                TurnStep = TurnStep,
+                ImpulseStep = ImpulseStep,
+                SubPulse = SubPulse,
+                Impulse = Impulse,
+            };
+        }
 
         public void Increment()
         {
+
             if (TurnStep == TurnStep.EnergyAllocation)
             {
                 Impulse = 0;
-                SubPulse = 0;
-                TurnStep = TurnStep.ImpulseProcess;
+                SubPulse = null;
                 ImpulseStep = FleetCommander.Simulation.ImpulseStep.SpeedChange;
+                TurnNumber = this.TurnNumber;
+                TurnStep = TurnStep.ImpulseProcess;
                 return;
-            }
+            };
 
             if (TurnStep == TurnStep.ImpulseProcess)
             {
                 if (ImpulseStep == FleetCommander.Simulation.ImpulseStep.SpeedChange)
                 {
+                    SubPulse = 0;
                     ImpulseStep = FleetCommander.Simulation.ImpulseStep.Movement;
                     return;
                 }
@@ -131,12 +180,13 @@ namespace FleetCommander.Simulation
                 if (ImpulseStep == FleetCommander.Simulation.ImpulseStep.Movement)
                 {
                     SubPulse++;
-
                     if (SubPulse == 4)
                     {
-                        SubPulse = 0;
+                        SubPulse = null;
                         ImpulseStep = FleetCommander.Simulation.ImpulseStep.OffensiveFire;
                     }
+
+                    return;
                 }
 
                 if (ImpulseStep == FleetCommander.Simulation.ImpulseStep.OffensiveFire)
@@ -144,7 +194,7 @@ namespace FleetCommander.Simulation
                     Impulse++;
                     if (Impulse == 8)
                     {
-                        Impulse = 0;
+                        Impulse = null;
                         TurnStep = TurnStep.RepairPhase;
                     }
                     else
@@ -160,6 +210,36 @@ namespace FleetCommander.Simulation
                 TurnNumber++;
                 TurnStep = TurnStep.EnergyAllocation;
             }
+        }
+    }
+
+    public struct SimulationTimeStamp
+    {
+        //public string Id { get; set; }
+
+        public int TurnNumber { get; set; }
+        public TurnStep TurnStep { get; set; }
+        public ImpulseStep? ImpulseStep { get; set; }
+        public int? Impulse { get; set; }
+        public int? SubPulse { get; set; }
+
+        public override string ToString()
+        {
+            return GetId();
+        }
+
+        [Pure]
+        public string GetId()
+        {
+            return $"{TurnNumber},{TurnStep},{ImpulseStep},{Impulse},{SubPulse}";
+        }
+
+        [Pure]
+        public SimulationTimeStamp Increment()
+        {
+            var builder = new SimulationTimeStampBuilder(this);
+            builder.Increment();
+            return builder.ToTimeStamp();
         }
 
         internal SimulationTimeStamp GetNextFiringOppporunity()

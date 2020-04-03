@@ -51,7 +51,9 @@ namespace FleetCommander.Simulation
             var ship = new Ship(spec);
             ship.Initialize();
             ship.Position = p;
-            ship.ShipId=AllShips.Max(x => x.ShipId) + 1;
+            ship.ShipId = 1;
+            if (AllShips.Any())
+                ship.ShipId=AllShips.Max(x => x.ShipId) + 1;
             AllShips.Add(ship);
             return ship;
         }
@@ -91,7 +93,7 @@ namespace FleetCommander.Simulation
         public void ChangeCourseImmediate(int shipId, string timestampId, DeclaredNavigation navigation)
         {
             var currentTimeStamp = SimulationTimeStamp;
-            if (currentTimeStamp.Id != timestampId)
+            if (currentTimeStamp.GetId() != timestampId)
                 return;
 
             var turnToModify = GetOrCreateTurn(SimulationTimeStamp.TurnNumber);
@@ -127,7 +129,7 @@ namespace FleetCommander.Simulation
             {
                 if (declaredNavigation.NewFacing.HasValue)
                 {
-                    ship.Position.SetFacing(declaredNavigation.NewFacing.Value);
+                    ship.Position = ship.Position.WithFacing(declaredNavigation.NewFacing.Value);
                     MovementMarkers.Add(new TurnMarker
                     {
                         ForShipId = ship.ShipId,
@@ -153,10 +155,11 @@ namespace FleetCommander.Simulation
                 var useTargeting = salvo.Targeting;
                 var damageRemainingToApply = salvo.TotalDamage;
 
-
-                var newHexDirection = HexRotation.NewFacing(salvo.DamageDirection, ship.Position.Rotation);
-
-                ApplyDamage(damageRemainingToApply, newHexDirection, useTargeting, ship, DamageType.WeaponFire);
+                var applyDamageToFace = salvo.IncomingDamageDirection;
+                for (int i = 0; i < ship.Position.Rotation; i++)
+                    applyDamageToFace = applyDamageToFace.RotateLeft();
+  
+                ApplyDamage(damageRemainingToApply, applyDamageToFace, useTargeting, ship, DamageType.WeaponFire);
 
             }
         }
@@ -225,7 +228,7 @@ namespace FleetCommander.Simulation
 
             public Ship ShipFrom { get; internal set; }
             public Ship ShipTo { get; internal set; }
-            public Hex DamageDirection { get; internal set; }
+            public Hex IncomingDamageDirection { get; internal set; }
         }
 
         private IReadOnlyCollection<Salvo> GenerateSalvos(IReadOnlyCollection<OffensiveFireDeclaration> fireDeclarations)
@@ -281,7 +284,7 @@ namespace FleetCommander.Simulation
                     TargetShipId = volley.ShipTo,
                     Targeting = volley.Targeting,
                     Projectiles = projectiles,
-                    DamageDirection = damageDirection
+                    IncomingDamageDirection = damageDirection
                 });
               
             }
@@ -302,6 +305,10 @@ namespace FleetCommander.Simulation
             }
         }
 
+        private void AdvanceSimulationTimestamp()
+        {
+        }
+
         public void AdvanceGame()
         {
             var turn = this.GetOrCreateTurn(this.SimulationTimeStamp.TurnNumber);
@@ -320,12 +327,20 @@ namespace FleetCommander.Simulation
                         x.ExecuteDeclaredEnergyAllocation(energyAllocation);
                     }
                 });
-                this.SimulationTimeStamp.Increment();
+
+                this.SimulationTimeStamp = SimulationTimeStamp.Increment();
+
                 return;
             }
 
             if (this.SimulationTimeStamp.TurnStep == TurnStep.ImpulseProcess)
             {
+                if (this.SimulationTimeStamp.ImpulseStep == ImpulseStep.SpeedChange)
+                {
+                    this.SimulationTimeStamp = SimulationTimeStamp.Increment();
+                    return;
+                }
+
                 if (this.SimulationTimeStamp.ImpulseStep == ImpulseStep.Movement)
                 {
                     AllShips.ForEach(x =>
@@ -335,7 +350,7 @@ namespace FleetCommander.Simulation
                         ExecutePlottedNavigation(x, declaredNavigation);
                     });
 
-                    this.SimulationTimeStamp.Increment();
+                    this.SimulationTimeStamp = SimulationTimeStamp.Increment();
                     return;
                 }
 
@@ -347,16 +362,16 @@ namespace FleetCommander.Simulation
 
                     GenerateSalvos(fireDeclarations);
 
-                    this.SimulationTimeStamp.Increment();
+                    this.SimulationTimeStamp = SimulationTimeStamp.Increment();
                     return;
                 }
             }
 
             if (this.SimulationTimeStamp.TurnStep == TurnStep.RepairPhase)
             {
-
                 AllShips.ForEach(x => x.RolloverExcessEnergyIntoBatteries());
-                this.SimulationTimeStamp.Increment();
+                this.SimulationTimeStamp = SimulationTimeStamp.Increment();
+                return;
             }
         }
 
@@ -381,7 +396,7 @@ namespace FleetCommander.Simulation
         {
 
             var newCoodinate = ship.Position.Hex.Neighbor(ship.Position.Rotation);
-            ship.Position.SetPosition(newCoodinate);
+            ship.Position = ship.Position.WithHex(newCoodinate);
 
             var turnMarkersToDecrement = MovementMarkers.Where(x => x.ForShipId == ship.ShipId).ToList();
             foreach (var turnMarker in turnMarkersToDecrement)
@@ -398,7 +413,7 @@ namespace FleetCommander.Simulation
             });
 
             var newCoodinate = ship.Position.Hex.Neighbor(direction);
-            ship.Position.SetPosition(newCoodinate);
+            ship.Position = ship.Position.WithHex(newCoodinate);
         }
     }
 }

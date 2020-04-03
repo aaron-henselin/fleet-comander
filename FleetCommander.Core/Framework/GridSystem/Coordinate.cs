@@ -130,6 +130,7 @@ namespace FleetCommander.Simulation.Framework.GridSystem
             return directionLookup[hexDirection];
         }
 
+
         public Hex Neighbor(int direction)
         {
             return Add(Hex.Direction(direction));
