@@ -3,9 +3,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29721.120
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FleetCommander.Simulation.Tests", "FleetCommander.Simulation.Tests\FleetCommander.Simulation.Tests.csproj", "{7F9A6F3B-DDDB-4281-969B-94EB6BE22503}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FleetCommander.Simulation.Tests", "FleetCommander.Simulation.Tests\FleetCommander.Simulation.Tests.csproj", "{7F9A6F3B-DDDB-4281-969B-94EB6BE22503}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FleetCommander.Core", "FleetCommander.Core\FleetCommander.Core.csproj", "{3DEBD9B0-B2D9-48CC-8AA3-54796BF63713}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FleetCommander.Core", "FleetCommander.Core\FleetCommander.Core.csproj", "{3DEBD9B0-B2D9-48CC-8AA3-54796BF63713}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FleetCommander.App.Server", "FleetCommander.App\Server\FleetCommander.App.Server.csproj", "{2976D015-5F64-471D-B351-0811937EC828}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FleetCommander.App.Client", "FleetCommander.App\Client\FleetCommander.App.Client.csproj", "{A26B25B9-1D0E-404A-A958-C89919C15185}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FleetCommander.App.Shared", "FleetCommander.App\Shared\FleetCommander.App.Shared.csproj", "{64B65BF1-D317-49AC-B4CB-969CE69BF073}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "NewFolder1", "NewFolder1", "{F0BB6D92-EFE6-402E-8B71-6EFF110EA24D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +29,18 @@ Global
 		{3DEBD9B0-B2D9-48CC-8AA3-54796BF63713}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3DEBD9B0-B2D9-48CC-8AA3-54796BF63713}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3DEBD9B0-B2D9-48CC-8AA3-54796BF63713}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2976D015-5F64-471D-B351-0811937EC828}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2976D015-5F64-471D-B351-0811937EC828}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2976D015-5F64-471D-B351-0811937EC828}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2976D015-5F64-471D-B351-0811937EC828}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A26B25B9-1D0E-404A-A958-C89919C15185}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A26B25B9-1D0E-404A-A958-C89919C15185}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A26B25B9-1D0E-404A-A958-C89919C15185}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A26B25B9-1D0E-404A-A958-C89919C15185}.Release|Any CPU.Build.0 = Release|Any CPU
+		{64B65BF1-D317-49AC-B4CB-969CE69BF073}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{64B65BF1-D317-49AC-B4CB-969CE69BF073}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{64B65BF1-D317-49AC-B4CB-969CE69BF073}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{64B65BF1-D317-49AC-B4CB-969CE69BF073}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

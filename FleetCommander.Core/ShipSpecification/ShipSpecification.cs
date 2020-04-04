@@ -13,6 +13,19 @@ namespace FleetCommander.Simulation
         public Loadout Loadout = new Loadout();
     }
 
+    
+    public class ControlSystemsLoadout
+    {
+        public int Lab { get; set; }
+        public int Trans { get; set; }
+    }
+
+    public class StructureLoadout
+    {
+        public int ForwardHull { get; set; }
+        public int RearHull { get; set; }
+        public int Frame { get; set; }
+    }
     public class EnergyLoadout
     {
         public int LeftWarp { get; set; }
@@ -29,9 +42,11 @@ namespace FleetCommander.Simulation
             return Weapons.Single(x => x.SsdCode == ssdCode);
         }
 
-        public int RearHull { get; set; }
-        public int ForwardHull { get; set; }
         public EnergyLoadout EnergyLoadout { get; set; } = new EnergyLoadout();
+        
+        public ControlSystemsLoadout SystemsLoadout { get; set; } = new ControlSystemsLoadout();
+        public StructureLoadout StructureLoadout { get; set; } = new StructureLoadout();
+
         public List<WeaponHardmount> Weapons = new List<WeaponHardmount>();
 
         public void AddPhaser360(int ssdCode)
@@ -83,6 +98,12 @@ namespace FleetCommander.Simulation
             ShieldStrength[Hex.Direction(4)] = 12;
             ShieldStrength[Hex.Direction(5)] = 12;
 
+            Loadout.StructureLoadout = new StructureLoadout
+            {
+                ForwardHull = 3,
+                Frame = 2,
+                RearHull = 3
+            };
             Loadout.EnergyLoadout = new EnergyLoadout
             {
                 BatteryCount = 2,
@@ -96,6 +117,7 @@ namespace FleetCommander.Simulation
             Loadout.AddPhaser1(3, Arc.RF, Arc.R);
             Loadout.AddPhaser360(4);
             Loadout.AddPhaser1(5,Arc.RH);
+
 
         }
 

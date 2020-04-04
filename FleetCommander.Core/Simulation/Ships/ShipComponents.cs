@@ -112,13 +112,13 @@ namespace FleetCommander.Simulation.Simulation.Ships
 
     public class PhaserComponent : WeaponComponent
     {
-        public PhaserFiringState FiringState { get; set; } = PhaserFiringState.Ready;
+        public PhaserFiringState ChargingState { get; set; } = PhaserFiringState.Charged;
         public int PhaserClass { get; set; }
     }
 
     public enum PhaserFiringState
     {
-        Ready, Expended
+        Charged, Expended
     }
 
     public enum PhotonTorpedoOverloadState

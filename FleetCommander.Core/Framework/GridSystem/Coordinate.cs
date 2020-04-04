@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
 
@@ -69,9 +70,131 @@ namespace FleetCommander.Simulation.Framework.GridSystem
     //}
 
 
+    struct DoubledCoord
+    {
+        public DoubledCoord(int col, int row)
+        {
+            this.col = col;
+            this.row = row;
+        }
+        public readonly int col;
+        public readonly int row;
 
+        static public DoubledCoord QdoubledFromCube(Hex h)
+        {
+            int col = h.q;
+            int row = 2 * h.r + h.q;
+            return new DoubledCoord(col, row);
+        }
+
+
+        public Hex QdoubledToCube()
+        {
+            int q = col;
+            int r = (int)((row - col) / 2);
+            int s = -q - r;
+            return new Hex(q, r, s);
+        }
+
+
+        static public DoubledCoord RdoubledFromCube(Hex h)
+        {
+            int col = 2 * h.q + h.r;
+            int row = h.r;
+            return new DoubledCoord(col, row);
+        }
+
+
+        public Hex RdoubledToCube()
+        {
+            int q = (int)((col - row) / 2);
+            int r = row;
+            int s = -q - r;
+            return new Hex(q, r, s);
+        }
+
+    }
+
+    public struct OffsetCoord
+    {
+        public OffsetCoord(int col, int row)
+        {
+            this.col = col;
+            this.row = row;
+        }
+        public readonly int col;
+        public readonly int row;
+        static public int EVEN = 1;
+        static public int ODD = -1;
+
+        static public OffsetCoord QoffsetFromCube(int offset, Hex h)
+        {
+            int col = h.q;
+            int row = h.r + (int)((h.q + offset * (h.q & 1)) / 2);
+            if (offset != OffsetCoord.EVEN && offset != OffsetCoord.ODD)
+            {
+                throw new ArgumentException("offset must be EVEN (+1) or ODD (-1)");
+            }
+            return new OffsetCoord(col, row);
+        }
+
+
+        static public Hex QoffsetToCube(int offset, OffsetCoord h)
+        {
+            int q = h.col;
+            int r = h.row - (int)((h.col + offset * (h.col & 1)) / 2);
+            int s = -q - r;
+            if (offset != OffsetCoord.EVEN && offset != OffsetCoord.ODD)
+            {
+                throw new ArgumentException("offset must be EVEN (+1) or ODD (-1)");
+            }
+            return new Hex(q, r, s);
+        }
+
+
+        static public OffsetCoord RoffsetFromCube(int offset, Hex h)
+        {
+            int col = h.q + (int)((h.r + offset * (h.r & 1)) / 2);
+            int row = h.r;
+            if (offset != OffsetCoord.EVEN && offset != OffsetCoord.ODD)
+            {
+                throw new ArgumentException("offset must be EVEN (+1) or ODD (-1)");
+            }
+            return new OffsetCoord(col, row);
+        }
+
+
+        static public Hex RoffsetToCube(int offset, OffsetCoord h)
+        {
+            int q = h.col - (int)((h.row + offset * (h.row & 1)) / 2);
+            int r = h.row;
+            int s = -q - r;
+            if (offset != OffsetCoord.EVEN && offset != OffsetCoord.ODD)
+            {
+                throw new ArgumentException("offset must be EVEN (+1) or ODD (-1)");
+            }
+            return new Hex(q, r, s);
+        }
+
+    }
+
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
     public struct Hex
     {
+        public OffsetCoord ToOffsetCoord()
+        {
+            return OffsetCoord.QoffsetFromCube(OffsetCoord.ODD, this);
+        }
+
+        private string DebuggerDisplay
+        {
+            get
+            {
+                var coord = ToOffsetCoord();
+                return string.Format($"Coordinate=[{coord.col},{coord.row}], QRS=[{q},{r},{s}]");
+            }
+        }
+
         public Hex(int q, int r, int s)
         {
             this.q = q;

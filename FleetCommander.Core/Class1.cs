@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Dynamic;
 using System.Runtime.CompilerServices;
@@ -34,7 +35,7 @@ namespace FleetCommander.Simulation
 
 
 
-
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
     public struct Position
     {
         public Hex Hex { get; set; }
@@ -51,6 +52,18 @@ namespace FleetCommander.Simulation
         {
             return new Position { Hex = coordinate, Rotation = Rotation };
         }
+
+        private string DebuggerDisplay
+        {
+            get
+            {
+                var coord = Hex.ToOffsetCoord();
+                var neighbor = Hex.Neighbor(Rotation);
+                var neighborCoord = neighbor.ToOffsetCoord();
+                return string.Format($"Hex=[{coord.col},{coord.row}], FacingHex=[{neighborCoord.col},{neighborCoord.row}]");
+            }
+        }
+
     }
 
     //    0

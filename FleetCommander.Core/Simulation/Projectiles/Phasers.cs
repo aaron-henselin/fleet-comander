@@ -8,9 +8,12 @@ namespace FleetCommander.Simulation.Simulation.Projectiles
 {
     public class Phaser1Projectile : DirectFireProjectile
     {
+        Phaser1DamageOutputTable _phaser1DamageOutputTable = new Phaser1DamageOutputTable();
+
         public override int CalculateDamage()
         {
-            throw new NotImplementedException();
+            var output = _phaser1DamageOutputTable.GetDamageOutput(this.Distance, this.HitTrack);
+            return output.DamageOutputed;
         }
 
         class Phaser1DamageOutputTable : DamageOutputTable

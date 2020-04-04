@@ -48,8 +48,8 @@ namespace FleetCommander.Simulation
 
         public Ship Spawn(ShipSpecification spec, Position p)
         {
-            var ship = new Ship(spec);
-            ship.Initialize();
+            var ship = new Ship();
+            ship.Initialize(spec);
             ship.Position = p;
             ship.ShipId = 1;
             if (AllShips.Any())
@@ -104,7 +104,7 @@ namespace FleetCommander.Simulation
         {
             var nextFiringOpportunity = SimulationTimeStamp.GetNextFiringOppporunity();
             var turnToModify = GetOrCreateTurn(nextFiringOpportunity.TurnNumber);
-            turnToModify.ImpulseProcessActions.SetOffensiveFire(0,nextFiringOpportunity,offensiveFireDeclaration);
+            turnToModify.ImpulseProcessActions.SetOffensiveFire(shipId,nextFiringOpportunity,offensiveFireDeclaration);
         }
         #endregion
 
@@ -201,8 +201,7 @@ namespace FleetCommander.Simulation
         {
             var d6 = Dice.RollD6();
             DamageAllocationTrack dacTrack = null;
-            if (useTargeting == SystemTargeting.Indiscriminant)
-                dacTrack = DamageAllocationChart.GetTrack(d6);
+            dacTrack = DamageAllocationChart.GetTrack(d6);
 
             if (useTargeting == SystemTargeting.Weapons)
             {
@@ -259,23 +258,33 @@ namespace FleetCommander.Simulation
 
                 foreach (var ssdCode in volley.SsdCode)
                 {
-                    var projectile = shipFrom.ExpendDirectFireProjectile(ssdCode);
-                    projectile.VolleyId = new VolleyId {
+                    DirectFireProjectile projectile;
+                    try
+                    {
+                        projectile = shipFrom.ExpendDirectFireProjectile(ssdCode);
+
+                    }
+                    catch (UnableToFireException e)
+                    {
+                        continue;
+                    }
+                    projectile.VolleyId = new VolleyId
+                    {
                         Origin = volley.ShipFrom,
                         Target = volley.ShipTo
 
                     };
                     projectile.Origin = volley.ShipFrom;
                     projectile.Target = volley.ShipTo;
-                    
+
                     projectile.HitTrack = this.Dice.RollD6();
-                    
+
                     projectiles.Add(projectile);
 
                     if (projectile is ICanBeOverloaded overloading)
                         if (overloading.IsOverloaded)
                             volley.Targeting = SystemTargeting.Indiscriminant;
-                        
+
                 }
                 salvoes.Add(new Salvo
                 {
@@ -360,7 +369,8 @@ namespace FleetCommander.Simulation
                         = AllShips.Select(x => turn.ImpulseProcessActions.GetOffensiveFire(x.ShipId, this.SimulationTimeStamp))
                             .Where(x => x != null).ToList();
 
-                    GenerateSalvos(fireDeclarations);
+
+                    ExecuteSimultaneousFireDeclarations(fireDeclarations);
 
                     this.SimulationTimeStamp = SimulationTimeStamp.Increment();
                     return;
@@ -370,6 +380,7 @@ namespace FleetCommander.Simulation
             if (this.SimulationTimeStamp.TurnStep == TurnStep.RepairPhase)
             {
                 AllShips.ForEach(x => x.RolloverExcessEnergyIntoBatteries());
+                AllShips.ForEach(x => x.RechargeWeapons());
                 this.SimulationTimeStamp = SimulationTimeStamp.Increment();
                 return;
             }

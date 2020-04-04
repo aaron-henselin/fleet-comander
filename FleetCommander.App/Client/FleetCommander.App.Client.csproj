@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <RazorLangVersion>3.0</RazorLangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="wwwroot\img\testship.jpg" />
+    <None Include="wwwroot\js\grid.js" />
+    <None Include="wwwroot\js\ht.js" />
+    <None Include="wwwroot\js\resourcesManager.js" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Blazor" Version="3.2.0-preview1.20073.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Blazor.Build" Version="3.2.0-preview1.20073.1" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.AspNetCore.Blazor.DevServer" Version="3.2.0-preview1.20073.1" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.AspNetCore.Blazor.HttpClient" Version="3.2.0-preview3.20168.3" />
+    <PackageReference Include="Microsoft.AspNetCore.Http.Connections.Client" Version="5.0.0-preview.2.20167.3" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="5.0.0-preview.2.20167.3" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Shared\FleetCommander.App.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

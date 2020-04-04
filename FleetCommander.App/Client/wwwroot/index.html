@@ -1,0 +1,85 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>FleetCommander.App</title>
+    <base href="/" />
+    <link href="css/bootstrap/bootstrap.min.css" rel="stylesheet" />
+    <link href="css/site.css" rel="stylesheet" />
+</head>
+
+<body>
+    <app>Loading...</app>
+
+    <div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="" class="reload">Reload</a>
+        <a class="dismiss">🗙</a>
+    </div>
+    <script src="_framework/blazor.webassembly.js"></script>
+<!--<script src="js/ht.js"></script>
+<script src="js/grid.js"></script>-->
+<script src="https://unpkg.com/honeycomb-grid@3.1.4/dist/honeycomb.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/4.7.3/pixi.min.js"></script>
+<script src="js/resourcesManager.js"></script>
+<script>
+    var init = function () {
+
+        if (window.canvas_init)
+            return;
+
+        window.canvas_init = true;
+
+            //var canvas = document.getElementById("hexCanvas");
+            //window.redrawHexGrid = function () { drawHexGrid(canvas, 3000, 3000);}
+
+            //// resize the canvas to fill browser window dynamically
+            //window.addEventListener('resize', resizeCanvas, false);
+
+            
+            //resources.load([
+            //    'img/testship.jpg'
+            //]);
+            //resources.onReady(resizeCanvas);
+
+            debugger;
+
+            const canvas = document.getElementById("pixi-surface");
+           
+            const app = new PIXI.Application({ transparent: true, antialias: true, width:5000,height:5000,view:canvas })
+            const graphics = new PIXI.Graphics()
+            graphics.cacheAsBitmap = true;
+            const Hex = Honeycomb.extendHex({ size: 50 })
+            const Grid = Honeycomb.defineGrid(Hex)
+
+            //document.body.appendChild(app.view)
+// set a line style of 1px wide and color #999
+            graphics.lineStyle(1, 0x999999)
+
+// render 10,000 hexes
+        Grid.rectangle({ width: 100, height: 100 }).forEach(hex => {
+            
+                const point = hex.toPoint()
+                // add the hex's position to each of its corner points
+                const corners = hex.corners().map(corner => corner.add(point))
+                // separate the first from the other corners
+                const [firstCorner, ...otherCorners] = corners
+
+                // move the "pencil" to the first corner
+                graphics.moveTo(firstCorner.x, firstCorner.y)
+                // draw lines to the other corners
+                otherCorners.forEach(({ x, y }) => graphics.lineTo(x, y))
+                // finish at the first corner
+                graphics.lineTo(firstCorner.x, firstCorner.y)
+
+                app.stage.addChild(graphics)
+            })
+
+
+    }
+</script>
+</body >
+
+</html >

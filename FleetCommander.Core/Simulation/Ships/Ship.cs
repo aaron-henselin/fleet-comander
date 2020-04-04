@@ -6,6 +6,10 @@ using FleetCommander.Simulation.Simulation.Projectiles;
 
 namespace FleetCommander.Simulation.Simulation.Ships
 {
+    public class UnableToFireException :Exception
+    {
+    }
+
     public class ApplyDamageResult
     {
         public int ShieldDamageCount { get; set; }
@@ -21,25 +25,19 @@ namespace FleetCommander.Simulation.Simulation.Ships
 
     public class Ship
     {
-        private readonly ShipSpecification _spec;
-
-        public Ship(ShipSpecification spec)
-        {
-            _spec = spec;
-        }
 
         public int ShipId { get; set; }
         public int CurrentSpeed { get; set; }
         public decimal UndeclaredEnginePool { get; set; }
-        public ShipState ShipInternals { get; set; }
+        public ShipInternals ShipInternals { get; set; }
         public Position Position { get; set; }
 
         /* (During the first turn of a scenario, the ship has additional energy tokens
          *  equal to the number of batteries on the ship, representing power stored in the batteries. )
          */
-        public void Initialize()
+        public void Initialize(ShipSpecification spec)
         {
-            ShipInternals = new ShipState(_spec);
+            ShipInternals = new ShipInternals(spec);
 
             foreach (var shipStateAvailableBattery in ShipInternals.AvailableBatteries)
                 shipStateAvailableBattery.IsCharged = true;
@@ -90,6 +88,9 @@ namespace FleetCommander.Simulation.Simulation.Ships
             var photonTorp = ShipInternals.AvailablePhotonTorpedoes.SingleOrDefault(x => x.SsdCode == ssdCode);
             if (photonTorp != null)
             {
+                if (photonTorp.LoadingState == PhotonTorpedoLoadingState.Unloaded)
+                    throw new UnableToFireException();
+
                 var projectile = new PhotonTorpedoProjectile();
                 projectile.OverloadState = photonTorp.OverloadState;
 
@@ -98,7 +99,13 @@ namespace FleetCommander.Simulation.Simulation.Ships
             }
 
             var phaser = ShipInternals.AvailablePhasers.SingleOrDefault(x => x.SsdCode == ssdCode);
-            phaser.FiringState = PhaserFiringState.Expended;
+            if (phaser == null)
+                throw new Exception("Invalid ssd code "+ssdCode);
+
+            if (phaser.ChargingState == PhaserFiringState.Expended)
+                throw new UnableToFireException();
+
+            phaser.ChargingState = PhaserFiringState.Expended;
             ExpendEnergyAdHoc(1);
 
             if (phaser.PhaserClass == 1)
@@ -257,9 +264,12 @@ namespace FleetCommander.Simulation.Simulation.Ships
                 var shield = this.ShipInternals.GetShield(Hex.Direction(shieldAllocation.Key));
                 shield.Remaining = Math.Min(shield.Remaining + shieldsToRestore, shield.Capacity);
             }
+        }
 
-
-            
+        internal void RechargeWeapons()
+        {
+            foreach (var shipInternalsAvailablePhaser in this.ShipInternals.AvailablePhasers)
+                shipInternalsAvailablePhaser.ChargingState = PhaserFiringState.Charged;
         }
     }
 
@@ -294,63 +304,21 @@ namespace FleetCommander.Simulation.Simulation.Ships
         public int RepairPointsPool { get; set; }
     }
 
-    public class ShipState
+
+    public class ShipInternals
     {
         private readonly ShipSpecification _spec;
         private readonly List<ShipComponent> _allComponents = new List<ShipComponent>();
         private readonly Dictionary<Hex, Shield> _shields = new Dictionary<Hex, Shield>();
-        public ShipState(ShipSpecification spec)
+        public ShipInternals(ShipSpecification spec)
         {
             _spec = spec;
 
-            int componentId = 100;
-
-            for (int i = 0; i < _spec.Loadout.EnergyLoadout.LeftWarp; i++)
-            {
-                _allComponents.Add(new WarpEngineComponent
-                {
-                    Position = WarpEnginePosition.Center,
-                    ComponentId = componentId++
-                });
-            }
-
-            for (int i = 0; i < _spec.Loadout.EnergyLoadout.RightWarp; i++)
-            {
-                _allComponents.Add(new WarpEngineComponent
-                {
-                    Position = WarpEnginePosition.Right,
-                    ComponentId = componentId++
-                });
-            }
-
-            for (int i = 0; i < _spec.Loadout.EnergyLoadout.BatteryCount; i++)
-            {
-                _allComponents.Add(new BatteryComponent
-                {
-                    ComponentId = componentId++
-                });
-            }
-
-
-            foreach (var weaponComplement in _spec.Loadout.Weapons)
-            {
-                if (weaponComplement.WeaponType == WeaponType.PHOT)
-                    _allComponents.Add(new PhotonTorpedoComponent
-                    {
-                        SsdCode = weaponComplement.SsdCode,
-                        ComponentId = componentId++,
-                        LoadingState = PhotonTorpedoLoadingState.Unloaded
-                    });
-
-                if (weaponComplement.WeaponType == WeaponType.PH1)
-                    _allComponents.Add(new PhaserComponent
-                    {
-                        SsdCode = weaponComplement.SsdCode,
-                        ComponentId = componentId++,
-                        PhaserClass = 1
-                    });
-            }
            
+            InitializeEnergyLoadout(spec.Loadout.EnergyLoadout);
+            InitializeStructureLoadout(spec.Loadout.StructureLoadout);
+            InitializeSystemsLoadout(spec.Loadout.SystemsLoadout);
+            InitializeWeaponsLoadout(spec.Loadout.Weapons);
             
             _shields[Hex.Direction(0)] = new Shield(spec.ShieldStrength[Hex.Direction(0)]);
             _shields[Hex.Direction(1)] = new Shield(spec.ShieldStrength[Hex.Direction(1)]);
@@ -364,6 +332,69 @@ namespace FleetCommander.Simulation.Simulation.Ships
                 RepairPointsPool = 0,
                 RepairPointsProduction = _spec.DamageControlRating
             };
+        }
+
+        private int _componentId = 0;
+
+        private void InitializeWeaponsLoadout(IReadOnlyCollection<WeaponHardmount> weapons)
+        {
+            
+            foreach (var weaponComplement in weapons)
+            {
+                if (weaponComplement.WeaponType == WeaponType.PHOT)
+                    InitializeComponents<PhotonTorpedoComponent>(1, x =>
+                        {
+                            x.LoadingState = PhotonTorpedoLoadingState.Unloaded;
+                            x.SsdCode = weaponComplement.SsdCode;
+                        });
+
+                if (weaponComplement.WeaponType == WeaponType.PH1)
+                    InitializeComponents<PhaserComponent>(1, x =>
+                    {
+                        x.PhaserClass = 1;
+                        x.SsdCode = weaponComplement.SsdCode;
+                    });
+
+                if (weaponComplement.WeaponType == WeaponType.PH3)
+                    InitializeComponents<PhaserComponent>(1, x =>
+                    {
+                        x.PhaserClass = 3;
+                        x.SsdCode = weaponComplement.SsdCode;
+                    });
+            }
+
+        }
+
+        private void InitializeComponents<T>(int count, Action<T> prepAction=null) where T:ShipComponent, new()
+        {
+            for (int i = 0; i < count; i++)
+            {
+                var shipComponent = new T {ComponentId = _componentId++};
+                prepAction?.Invoke(shipComponent);
+                _allComponents.Add(shipComponent);
+            }
+        }
+
+        private void InitializeEnergyLoadout(EnergyLoadout loadout)
+        {
+            InitializeComponents<WarpEngineComponent>(loadout.LeftWarp,x => x.Position = WarpEnginePosition.Center);
+            InitializeComponents<WarpEngineComponent>(loadout.RightWarp, x => x.Position = WarpEnginePosition.Right);
+            InitializeComponents<BatteryComponent>(loadout.BatteryCount);
+            InitializeComponents<ImpulseEngineComponent>(loadout.Impulse);
+            InitializeComponents<ReactorComponent>(loadout.Reactor);
+        }
+
+        private void InitializeStructureLoadout(StructureLoadout loadout)
+        {
+            InitializeComponents<FrameComponent>(loadout.Frame);
+            InitializeComponents<HullComponent>(loadout.ForwardHull,x => x.Position = HullPosition.F);
+            InitializeComponents<HullComponent>(loadout.RearHull, x => x.Position = HullPosition.R);
+        }
+
+        private void InitializeSystemsLoadout(ControlSystemsLoadout loadout)
+        {
+            InitializeComponents<LabComponent>(loadout.Lab);
+            InitializeComponents<TransComponent>(loadout.Trans);
         }
 
         private IEnumerable<ShipComponent> UndamagedComponents => _allComponents.Where(x => !x.Damaged);
