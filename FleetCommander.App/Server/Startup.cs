@@ -150,6 +150,7 @@ namespace FleetCommander.App.Server
                 var offset = ship.Position.Hex.ToOffsetCoord();
                 board.ShipTokens.Add(new ShipToken
                 {
+                    Id = ship.ShipId.ToString(),
                     Col = offset.col,
                     Row = offset.row,
                     Rot = ship.Position.Rotation

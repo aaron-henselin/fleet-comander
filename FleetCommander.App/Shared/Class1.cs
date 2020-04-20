@@ -23,6 +23,7 @@ namespace FleetCommander.App.Shared
 
     public class TurnToken : IToken
     {
+        public string Id { get; set; }
         public int Col { get; set; }
         public int Row { get; set; }
         public int Rot { get; set; }
@@ -32,6 +33,7 @@ namespace FleetCommander.App.Shared
 
     public class SlipToken : IToken
     {
+        public string Id { get; set; }
         public int Col { get; set; }
         public int Row { get; set; }
         public int Rot { get; set; }
@@ -39,6 +41,7 @@ namespace FleetCommander.App.Shared
 
     public interface IToken
     {
+        public string Id { get; }
         public int Col { get; }
         public int Row { get;}
         public int Rot { get; }
@@ -46,6 +49,7 @@ namespace FleetCommander.App.Shared
 
     public class ShipToken : IToken
     {
+        public string Id { get; set; }
         public int Col { get; set; }
         public int Row { get; set; }
         public int Rot { get; set; }

@@ -39,7 +39,7 @@
         _hubConnection.On<GameBoard>("gameStateChanged", (board) =>
         {
             ClientGameState.GameBoard = board;
-            JSRuntime.InvokeVoidAsync("window.redrawHexGrid").ConfigureAwait(false);
+            JSRuntime.InvokeVoidAsync("window.onGameStateChanged",board).ConfigureAwait(false);
 
         });
 
